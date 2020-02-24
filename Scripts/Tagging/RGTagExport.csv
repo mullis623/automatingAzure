@@ -1,0 +1,8 @@
+ApplicationContact, Purpose, ApplicationOwner, Application, Environment, CostCenter, CreatedBy, Unit, ResourceGroupName, Department, Status, Testing
+mullis, Testing, mullis, UnzipEverything, Development, NA, mullis, NA, AzUnzipEverything, IT, ACTIVE
+mullis, Testing, mullis, AKSDemo, Development, NA, mullis, NA, AKS_DEMO, IT, ACTIVE
+mullis, Testing, mullis, RPSLS, Development, NA, mullis, NA, shmulli_RPSLS, IT, ACTIVE
+mullis, Testing, mullis, Linux, Development, NA, mullis, NA, LinuxVMTest, IT, ACTIVE
+, , , , , NA, , , DataFactory, , , Should Have 12 Now
+mullis, Testing, mullis, kubernetes, Development, NA, mullis, NA, kubthehardway, IT, ACTIVE
+mullis, Testing, mullis, Infra, Development, NA, mullis, NA, shmulliDevOps-Infra, IT, ACTIVE

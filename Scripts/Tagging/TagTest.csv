@@ -1,28 +1,7 @@
 ResourceGroupName,Application,ApplicationContact,ApplicationOwner,CostCenter,Department,Environment,Purpose,CreatedBy,Status,Unit
-avi-mpp-rg,Infrastructure,AMPARIKH,AMPARIKH,,TEC,Development,Base network infrastructure ,AMPARIKH,ACTIVE,EA
-AzureBackupRG_eastus_1,Infrastructure,AMPARIKH,AMPARIKH,,TEC,Development,Base network infrastructure ,AMPARIKH,ACTIVE,EA
-cloud-shell-storage-eastus,Infrastructure,AMPARIKH,AMPARIKH,,TEC,Development,Base network infrastructure ,AMPARIKH,ACTIVE,EA
-DefaultResourceGroup-EUS,Infrastructure,AMPARIKH,AMPARIKH,,TEC,Development,Base network infrastructure ,AMPARIKH,ACTIVE,EA
-ea-BaseNetworkTopology-rg,Infrastructure,AMPARIKH,AMPARIKH,,TEC,Development,Base network infrastructure ,AMPARIKH,ACTIVE,EA
-EAM-EMP_Build-RG,Infrastructure,AMPARIKH,AMPARIKH,,TEC,Development,Base network infrastructure ,AMPARIKH,ACTIVE,EA
-EAM-EMP_Dev-RG,Infrastructure,AMPARIKH,AMPARIKH,,TEC,Development,Base network infrastructure ,AMPARIKH,ACTIVE,EA
-EAM-EMP_Test-RG,Infrastructure,AMPARIKH,AMPARIKH,,TEC,Development,Base network infrastructure ,AMPARIKH,ACTIVE,EA
-EAM-EMP_Train-RG,Infrastructure,AMPARIKH,AMPARIKH,,TEC,Development,Base network infrastructure ,AMPARIKH,ACTIVE,EA
-MC_WTC-VTK_RFID-RG_azca-wtc-vtk-kubernetes-10_eastus,Infrastructure,AMPARIKH,AMPARIKH,,TEC,Development,Base network infrastructure ,AMPARIKH,ACTIVE,EA
-NetworkWatcherRG,Infrastructure,AMPARIKH,AMPARIKH,,TEC,Development,Base network infrastructure ,AMPARIKH,ACTIVE,EA
-oem-WebEOC-rg,Infrastructure,AMPARIKH,AMPARIKH,,TEC,Development,Base network infrastructure ,AMPARIKH,ACTIVE,EA
-path-CountDownClocks-rg,Infrastructure,AMPARIKH,AMPARIKH,,TEC,Development,Base network infrastructure ,AMPARIKH,ACTIVE,EA
-tbt-MyTerminal-rg,Infrastructure,AMPARIKH,AMPARIKH,,TEC,Development,Base network infrastructure ,AMPARIKH,ACTIVE,EA
-TEC-ASR_EA_Infra-RG,Infrastructure,AMPARIKH,AMPARIKH,,TEC,Development,Base network infrastructure ,AMPARIKH,ACTIVE,EA
-tec-ea-devops-rg,Infrastructure,AMPARIKH,AMPARIKH,,TEC,Development,Base network infrastructure ,AMPARIKH,ACTIVE,EA
-TEC-EA-Infra_Migrate-RG,Infrastructure,AMPARIKH,AMPARIKH,,TEC,Development,Base network infrastructure ,AMPARIKH,ACTIVE,EA
-TEC-GIS-RG,Infrastructure,AMPARIKH,AMPARIKH,,TEC,Development,Base network infrastructure ,AMPARIKH,ACTIVE,EA
-TEC-INF_ApplicationKeyVault-RG,Infrastructure,AMPARIKH,AMPARIKH,,TEC,Development,Base network infrastructure ,AMPARIKH,ACTIVE,EA
-TEC-INF_OMS-RG,Infrastructure,AMPARIKH,AMPARIKH,,TEC,Development,Base network infrastructure ,AMPARIKH,ACTIVE,EA
-TEC-INF_RecoveryVault-RG,Infrastructure,AMPARIKH,AMPARIKH,,TEC,Development,Base network infrastructure ,AMPARIKH,ACTIVE,EA
-TEC-OMS_EA_Infra-RG,Infrastructure,AMPARIKH,AMPARIKH,,TEC,Development,Base network infrastructure ,AMPARIKH,ACTIVE,EA
-TEC-POC_EA-RG,Infrastructure,AMPARIKH,AMPARIKH,,TEC,Development,Base network infrastructure ,AMPARIKH,ACTIVE,EA
-TEC-POC_Test1-RG,Infrastructure,AMPARIKH,AMPARIKH,,TEC,Development,Base network infrastructure ,AMPARIKH,ACTIVE,EA
-TEC-SVC-RG,Infrastructure,AMPARIKH,AMPARIKH,,TEC,Development,Base network infrastructure ,AMPARIKH,ACTIVE,EA
-TEC-Test1-RG,Infrastructure,AMPARIKH,AMPARIKH,,TEC,Development,Base network infrastructure ,AMPARIKH,ACTIVE,EA
-WTC-VTK_RFID-RG,Infrastructure,AMPARIKH,AMPARIKH,,TEC,Development,Base network infrastructure ,AMPARIKH,ACTIVE,EA
+AKS_DEMO,AKSDemo,mullis,mullis,NA,IT,Development,Testing,mullis,ACTIVE,NA
+AzUnzipEverything,UnzipEverything,mullis,mullis,NA,IT,Development,Testing,mullis,ACTIVE,NA
+kubthehardway,kubernetes,mullis,mullis,NA,IT,Development,Testing,mullis,ACTIVE,NA
+shmulli_RPSLS,RPSLS,mullis,mullis,NA,IT,Development,Testing,mullis,ACTIVE,NA
+shmulliDevOps-Infra,Infra,mullis,mullis,NA,IT,Development,Testing,mullis,ACTIVE,NA
+LinuxVMTest,Linux,mullis,mullis,NA,IT,Development,Testing,mullis,ACTIVE,NA

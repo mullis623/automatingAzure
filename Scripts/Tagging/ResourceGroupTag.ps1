@@ -1,15 +1,20 @@
 [CmdletBinding()]
 param (
-    [string]$ScriptPath
+    [string]$CSVFileName,
+    [string]$ScriptPath #Added for use in Azure DevOps PowerShell Task
 )
 
 $WorkingDirectory = Get-Location
 
-#$ResourceGroups = "avi-mpp-rg"
-$ResourceGroups = (Get-AzResourceGroup).ResourceGroupName
-$csv = Import-Csv "$ScriptPath\TagTest.csv"
+if(!$ScriptPath)
+{
+    $ScriptPath = $WorkingDirectory
+}
 
-Write-Host "Working Directory: $WorkingDirectory"
+$ResourceGroups = (Get-AzResourceGroup).ResourceGroupName
+$csv = Import-Csv "$ScriptPath\$CSVFileName"
+
+Write-Host "ScriptPath: $ScriptPath"
 
 foreach($Tags in $csv)
 {
@@ -53,6 +58,10 @@ foreach($Tags in $csv)
                 else {
                     Write-Host "Tag: $TagName already exists with the correct value on Resource Group: $ResourceGroup" -ForegroundColor Green
                 }
+            }
+            elseif (!$TagValue) 
+            {
+                Write-Host "Skipping since Tag: $TagName does not have a value for RG: $ResourceGroup." -ForegroundColor Yellow    
             }
             else {
                 Write-Host "Adding Tag: $TagName to ResourceGroup: $ResourceGroup" -ForegroundColor Cyan
