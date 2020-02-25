@@ -101,8 +101,6 @@ function GetPrefix
 
 #Create new SPN if doesnt exist
 
-#$AppRegName = "shmulli-PAOnboardTest"
-
 $spObjId = az ad sp list --display-name $AppRegName --query [].objectId --output tsv
 
 if(!$spObjId)
