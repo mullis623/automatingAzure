@@ -1,3 +1,26 @@
+<#
+
+Script Prerequisites:
+    1. Service Principal Exists
+    2. Key Vault Exists with Correct Secret Access Policies for Service Principal (Get, Set, List)
+    3. Storage Account for storing Logs Already Exists  
+    4. App Service Already Exists
+
+Script Steps:
+
+    1. Gets a Rest Header to use for making direct Azure REST API calls using an Azure Service Principal.   
+    2. Initializes logging containers for the storage Account Passed In
+        i.	Application logs
+        ii.	Http Logs
+    3. For each container, checks for existence of existing SASToken by checking Key Vault. If it does not exist:
+            i.	Storage Access Policy is created
+        ii.	SAS Token is created and uploaded to Key Vault.
+    4. For each container, SAS Token is pulled from Key Vault
+    5. JSON Payload is created for REST API Call using 2 SAS Tokens from above
+    6. Rest API is called to deploy logging configuration.  
+ 
+ #>
+
 [CmdletBinding()]
 param(
     [string]$appServiceName,
@@ -9,11 +32,6 @@ param(
     [string]$servicePrincipalId,
     [string]$servicePrincipalKey
 )
-
-function Get-ScriptDirectory {
-    $Invocation = (Get-Variable MyInvocation -Scope 1).Value
-    Split-Path $Invocation.MyCommand.Path
-}
 
 function Get-AzureRestAuthHeader {
     param
