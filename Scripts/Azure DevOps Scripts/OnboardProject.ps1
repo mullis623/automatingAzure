@@ -61,9 +61,9 @@ function GetSuffix
 
     $suffix = switch -exact ($subType)
                 {
-                    "Production" {"10"}
-                    "NonProduction" {"70"}
-                    default {"00"}
+                    "Production" {"Prod"}
+                    "NonProduction" {"NonProd"}
+                    default {"NonProd"}
                 }
 
     return $suffix
@@ -160,12 +160,11 @@ foreach($SubscriptionID in $SubscriptionIDList)
 
 $Env:AZURE_DEVOPS_EXT_AZURE_RM_SERVICE_PRINCIPAL_KEY = $password
 
-$AzDevOpsPATSecret = az keyvault secret show --name $azDevOpdPATSecretName --vault-name $keyVaultName | ConvertFrom-Json
+$AzDevOpsPATSecret = az keyvault secret show --name $azDevOpsPATSecretName --vault-name $keyVaultName | ConvertFrom-Json
 $azDevOpsPAT = $AzDevOpsPATSecret.value
 
-$env:AZURE_DEVOPS_EXT_PAT = $azDevOpsPAT
-
-$env:AZURE_DEVOPS_EXT_PAT | az devops login --organization $azDevOpsOrgName
+$Env:AZURE_DEVOPS_EXT_PAT = $azDevOpsPAT
+$Env:AZURE_DEVOPS_EXT_PAT | az devops login --organization $azDevOpsOrgName
 
 $projList = (az devops project list | ConvertFrom-Json).value
 
@@ -215,4 +214,4 @@ foreach($SubscriptionID in $SubscriptionIDList)
 }
 
 $Env:AZURE_DEVOPS_EXT_AZURE_RM_SERVICE_PRINCIPAL_KEY = $null
-$env:AZURE_DEVOPS_EXT_PAT = $null
+$Env:AZURE_DEVOPS_EXT_PAT = $null
