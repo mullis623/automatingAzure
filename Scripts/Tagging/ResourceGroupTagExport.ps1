@@ -64,10 +64,10 @@ if($Global:TagNameList.Count -gt 0)
 
     foreach($TagName in $Global:TagNameList)
     {
-        $TagNameCSVString += "$TagName, "
+        $TagNameCSVString += "$TagName,"
     }
 
-    $TagNameCSVString = $TagNameCSVString.TrimEnd(', ')
+    $TagNameCSVString = $TagNameCSVString.TrimEnd(',')
 
     $TagNameCSVString | Out-File $csvFile -Append
 }
@@ -94,10 +94,10 @@ foreach($RG in $RGsWithTags)
             }
         }
 
-        $TagValueCSVString += "$TagValue, "
+        $TagValueCSVString += "$TagValue,"
     }
 
-    $TagValueCSVString = $TagValueCSVString.TrimEnd(', ')
+    $TagValueCSVString = $TagValueCSVString.TrimEnd(',')
     $TagValueCSVString | Out-File $csvFile -Append
             
 }
