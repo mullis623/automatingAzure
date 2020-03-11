@@ -1,6 +1,18 @@
 # VM Scale Set
-#   Internal Virtual Network
-#    
-Scripts and Templates for automating deployments to Azure
+#   Private Virtual Network
+#   SSL Cert Import from KeyVault 
+#   Binding SSL to IIS port 443 through Custom Script Extension
+#   Internal Load Balancer
+#       
+Prerequisites to Using this Template:
 
-Documentation of scripts is a work in progress and will be up soon.  In this repo, I will be posting scripts and templates that I have written and used over the last few years enabling DevOps Automation for customers.  Some of the scripts and templates require some modification to remove customer specific details and ensure that all content is generic.  Stay tuned and feel free to ask any questions in the meantime.  
+Note: This template was designed to be used in typical scenario where many of these resources are managed by separate groups.
+
+    These resources are not included in this template but required:
+        Virtual Network w/ Subnet for deploying the VM Instances and Internal Load Balancer
+            Same Vnet required for VMSS w/ LB, but allows for separate subnets
+        Key Vault used by the VM Instances for: 
+            Admin Password Secret
+            SSL Certificate Resource (follow steps here: https://docs.microsoft.com/en-us/azure/virtual-machines/windows/tutorial-secure-web-server#generate-a-certificate-and-store-in-key-vault)
+        Storage Account with Blob Container for PowerShell Script used by the CSE
+            Upload BindSSLToIIS.ps1 to Container prior to running template
