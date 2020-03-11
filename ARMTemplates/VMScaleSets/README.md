@@ -10,10 +10,10 @@ _Note: This template was designed to be used in typical scenario where many of t
 **Prerequisites to Using this Template:**
 
 These resources are not included in this template but required:
-* Virtual Network w/ Subnet for deploying the VM Instances and Internal Load Balancer
+* Virtual Network w/ Subnet for deploying the VM Instances and Internal Load Balancer  
     Same Vnet required for VMSS w/ LB, but allows for separate subnets
-* Key Vault used by the VM Instances for: 
-    Admin Password Secret
+* Key Vault used by the VM Instances for:  
+    Admin Password Secret  
     SSL Certificate Resource - follow steps [here:](https://docs.microsoft.com/en-us/azure/virtual-machines/windows/tutorial-secure-web-server#generate-a-certificate-and-store-in-key-vault) or use Azure Portal. 
-* Storage Account with Blob Container for PowerShell Script used by the CSE
+* Storage Account with Blob Container for PowerShell Script used by the CSE  
     Upload BindSSLToIIS.ps1 to Container prior to running template
