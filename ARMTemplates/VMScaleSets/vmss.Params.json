@@ -1,0 +1,47 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "VMSSDetails": {
+            "value": {
+                "Name": "NameOfScaleSet",
+                "SkuName": "Standard_A1_v2",
+                "Capacity": 3,
+                "UpgradeMode": "Automatic",
+                "OSVersion": "2016-Datacenter",
+                "adminUserName": "vmssAdmin",
+                "subnetName": "subnetName",
+                "certKVRGName": "ResourceGroupNameforCertificateKeyVault",
+                "certKVName": "KeyVaultNameforCertificateKeyVault",
+                "certName": "CertificateNameInKeyVault",
+                "cseStorageAccountName": "StorageAccountName",
+                "cseSAContainerName": "blobContainerName",
+                "cseStorageAccountRGName": "ResourceGroupNameForStorageAccount",
+                "cseScriptName": "BindSSLToIIS.ps1",
+                "certSubjectName": "CertificateSubjectName",
+                "IISSiteName": "Default Web Site"
+            }
+        },
+        "VnetDetails": {
+            "value": {
+                "Name": "NameOfVirtualNetwork",
+                "RGName": "VirtualNetworkResourceGroupName"
+            }
+        },
+        "adminPassword": {
+            "reference": {
+                "keyVault": {
+                    "id": "resourceID_KeyVaultStoringAdminPasswordSecret"
+                },
+                "secretName": "vmadminpassword"
+            }
+        },
+        "LBDetails": {
+            "value": {
+                "Name": "LoadBalancerName",
+                "subnetName": "LoadBalancerSubnetName",
+                "Sku": "Standard"
+            }
+        }
+    }
+}

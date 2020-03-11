@@ -1,0 +1,247 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "VMSSDetails": {
+            "type": "object",
+            "metadata": {
+                "description": "Details of the VM Scale Set required by the ARM Template."
+            }
+        },
+        "adminPassword": {
+            "type": "securestring",
+            "metadata": {
+                "description": "Password for the Virtual Machine."
+            }
+        },
+        "location": {
+            "type": "string",
+            "defaultValue": "[resourceGroup().location]",
+            "metadata": {
+                "description": "Location for all resources."
+            }
+        },
+        "VnetDetails": {
+            "type": "object",
+            "metadata": {
+                "description": "Details of the Virtual Network required by the ARM Template. Not built in this template"
+            }
+        },
+        "LBDetails": {
+            "type": "object",
+            "metadata": {
+                "description": "Details of the Load Balancer required by the ARM Template."
+            }
+        }
+    },
+    "variables": {
+        "vmssSubnetID": "[resourceId(parameters('VnetDetails').RGName, 'Microsoft.Network/virtualNetworks/subnets', parameters('VnetDetails').Name, parameters('VMSSDetails').subnetName)]",
+        "lbSubnetID": "[resourceId(parameters('VnetDetails').RGName, 'Microsoft.Network/virtualNetworks/subnets', parameters('VnetDetails').Name, parameters('LBDetails').subnetName)]",
+        "cseScriptUrl": "[concat('https://', parameters('VMSSDetails').cseStorageAccountName, '.blob.core.windows.net/armcsescripts/', parameters('VMSSDetails').cseScriptName)]"
+    },
+    "resources": [
+        {
+            "apiVersion": "2019-04-01",
+            "type": "Microsoft.Network/loadBalancers",
+            "name": "[parameters('LBDetails').Name]",
+            "location": "[resourceGroup().location]",
+            "dependsOn": [
+            ],
+            "tags": {
+                "displayName": "Application Load Balancer"
+            },
+            "sku": {
+                "name": "[parameters('LBDetails').Sku]"
+            },
+            "properties": {
+                "frontendIPConfigurations": [
+                    {
+                        "properties": {
+                            "subnet": {
+                                "id": "[variables('lbSubnetId')]"
+                            },
+                            "privateIPAllocationMethod": "Dynamic"
+                        },
+                        "name": "LBFrontend"
+                    }
+                ],
+                "backendAddressPools": [
+                    {
+                        "name": "AppBackendPool1"
+                    }
+                ],
+                "loadBalancingRules": [
+                    {
+                        "properties": {
+                            "frontendIPConfiguration": {
+                                "id": "[concat(resourceId('Microsoft.Network/loadBalancers', parameters('LBDetails').Name), '/frontendIpConfigurations/LBFrontend')]"
+                            },
+                            "backendAddressPool": {
+                                "id": "[concat(resourceId('Microsoft.Network/loadBalancers', parameters('LBDetails').Name), '/backendAddressPools/AppBackendPool1')]"
+                            },
+                            "protocol": "Tcp",
+                            "frontendPort": 80,
+                            "backendPort": 80,
+                            "idleTimeoutInMinutes": 4,
+                            "probe": {
+                                "id": "[concat(resourceId('Microsoft.Network/loadBalancers', parameters('LBDetails').Name), '/probes/HealthProbe')]"
+                            }
+                        },
+                        "Name": "lbrule"
+                    },
+                    {
+                        "properties": {
+                            "frontendIPConfiguration": {
+                                "id": "[concat(resourceId('Microsoft.Network/loadBalancers', parameters('LBDetails').Name), '/frontendIpConfigurations/LBFrontend')]"
+                            },
+                            "backendAddressPool": {
+                                "id": "[concat(resourceId('Microsoft.Network/loadBalancers', parameters('LBDetails').Name), '/backendAddressPools/AppBackendPool1')]"
+                            },
+                            "protocol": "Tcp",
+                            "frontendPort": 443,
+                            "backendPort": 443,
+                            "idleTimeoutInMinutes": 4,
+                            "probe": {
+                                "id": "[concat(resourceId('Microsoft.Network/loadBalancers', parameters('LBDetails').Name), '/probes/HealthProbe')]"
+                            }
+                        },
+                        "Name": "lbruleSSL"
+                    }
+                ],
+                "probes": [
+                    {
+                        "properties": {
+                            "protocol": "Tcp",
+                            "port": 80,
+                            "intervalInSeconds": 15,
+                            "numberOfProbes": 2
+                        },
+                        "name": "HealthProbe"
+                    }
+                ]
+            }
+        },
+        {
+            "type": "Microsoft.Compute/virtualMachineScaleSets",
+            "name": "[parameters('VMSSDetails').Name]",
+            "location": "[parameters('location')]",
+            "apiVersion": "2019-07-01",
+            "zones": [
+                "1",
+                "2",
+                "3"
+            ],
+            "dependsOn": [
+                "[resourceId('Microsoft.Network/loadBalancers/', parameters('LBDetails').Name)]"
+            ],
+            "sku": {
+                "name": "[parameters('VMSSDetails').SkuName]",
+                "capacity": "[parameters('VMSSDetails').Capacity]"
+            },
+            "properties": {
+                "upgradePolicy": {
+                    "mode": "[parameters('VMSSDetails').UpgradeMode]"
+                },
+                "virtualMachineProfile": {
+                    "storageProfile": {
+                        "osDisk": {
+                            "caching": "ReadWrite",
+                            "createOption": "FromImage"
+                        },
+                        "imageReference": {
+                            "publisher": "MicrosoftWindowsServer",
+                            "offer": "WindowsServer",
+                            "sku": "[parameters('VMSSDetails').OSVersion]",
+                            "version": "latest"
+                        }
+                    },
+                    "extensionProfile": {
+                        "extensions": [
+                            {
+                                "name": "HealthExtension",
+                                "properties": {
+                                    "publisher": "Microsoft.ManagedServices",
+                                    "type": "ApplicationHealthWindows",
+                                    "typeHandlerVersion": "1.0",
+                                    "autoUpgradeMinorVersion": false,
+                                    "settings": {
+                                        "protocol": "http",
+                                        "port": "80",
+                                        "requestPath": "/"
+                                    }
+                                }
+                            },
+                            {
+                                "name": "customScript",
+                                "properties": {
+                                    "publisher": "Microsoft.Compute",
+                                    "settings": {
+                                        "fileUris": [
+                                            "[variables('cseScriptUrl')]"
+                                        ]
+                                    },
+                                    "typeHandlerVersion": "1.8",
+                                    "autoUpgradeMinorVersion": true,
+                                    "protectedSettings": {
+                                        "commandToExecute": "[concat('powershell -ExecutionPolicy Unrestricted -File ', parameters('VMSSDetails').cseScriptName, ' -IISSiteName \"', parameters('VMSSDetails').IISSiteName, '\" -CertSubjectName \"', parameters('VMSSDetails').CertSubjectName, '\"')]",
+                                        "storageAccountName": "[parameters('VMSSDetails').cseStorageAccountName]",
+                                        "storageAccountKey": "[listKeys(resourceId(parameters('VMSSDetails').cseStorageAccountRGName, 'Microsoft.Storage/storageAccounts', parameters('VMSSDetails').cseStorageAccountName), '2019-06-01').keys[0].value]"
+                                    },
+                                    "type": "CustomScriptExtension"
+                                }
+                            }
+                        ]
+                    },
+                    "osProfile": {
+                        "computerNamePrefix": "dsnyvmss",
+                        "adminUsername": "[parameters('VMSSDetails').adminUsername]",
+                        "adminPassword": "[parameters('adminPassword')]",
+                        "windowsConfiguration": {
+                            "provisionVmAgent": true
+                        },
+                        "secrets": [
+                            {
+                                "sourceVault": {
+                                    "id": "[resourceId(parameters('VMSSDetails').certKVRGName, 'Microsoft.KeyVault/vaults', parameters('VMSSDetails').certKVName)]"
+                                },
+                                "vaultCertificates": [
+                                    {
+                                        "certificateUrl": "[reference(resourceId(parameters('VMSSDetails').certKVRGName, 'Microsoft.KeyVault/vaults/secrets', parameters('VMSSDetails').certKVName, parameters('VMSSDetails').certName), '2018-02-14', 'Full').Properties.secretUriWithVersion]",
+                                        "certificateStore": "My"
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    "networkProfile": {
+                        "networkInterfaceConfigurations": [
+                            {
+                                "name": "dsnyVMSSNic",
+                                "properties": {
+                                    "primary": true,
+                                    "ipConfigurations": [
+                                        {
+                                            "name": "dsnyVMSSIpConfig",
+                                            "properties": {
+                                                "subnet": {
+                                                    "id": "[variables('vmssSubnetID')]"
+                                                },
+                                                "loadBalancerBackendAddressPools": [
+                                                    {
+                                                        "id": "[concat(resourceId('Microsoft.Network/loadBalancers', parameters('LBDetails').Name), '/backendAddressPools/AppBackendPool1')]"
+                                                    }
+                                                ]
+                                            }
+                                        }
+                                    ]
+                                }
+                            }
+                        ]
+                    }
+                }
+            }
+        }
+    ],
+    "outputs": {
+    }
+}
