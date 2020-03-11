@@ -1,9 +1,9 @@
 # VM Scale Set
 ###    Template Deployment Details:
-    **Deployed to Private Virtual Network
+    Deployed to Private Virtual Network
     SSL Cert Imported to VM Instances from KeyVault 
     Binding SSL to IIS port 443 on VM Instances through Custom Script Extension
-    Internal Load Balancer**
+    Internal Load Balancer
 
 _Note: This template was designed to be used in typical scenario where many of these resources are managed by separate groups._
 
