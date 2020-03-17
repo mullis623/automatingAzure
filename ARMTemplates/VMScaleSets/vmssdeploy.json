@@ -37,7 +37,7 @@
     "variables": {
         "vmssSubnetID": "[resourceId(parameters('VnetDetails').RGName, 'Microsoft.Network/virtualNetworks/subnets', parameters('VnetDetails').Name, parameters('VMSSDetails').subnetName)]",
         "lbSubnetID": "[resourceId(parameters('VnetDetails').RGName, 'Microsoft.Network/virtualNetworks/subnets', parameters('VnetDetails').Name, parameters('LBDetails').subnetName)]",
-        "cseScriptUrl": "[concat('https://', parameters('VMSSDetails').cseStorageAccountName, '.blob.core.windows.net/armcsescripts/', parameters('VMSSDetails').cseScriptName)]"
+        "cseScriptUrl": "[concat('https://', parameters('VMSSDetails').cseStorageAccountName, '.blob.core.windows.net/', parameters('VMSSDetails').cseSAContainerName, '/', parameters('VMSSDetails').cseScriptName)]"
     },
     "resources": [
         {
