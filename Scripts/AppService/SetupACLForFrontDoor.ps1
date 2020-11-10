@@ -3,7 +3,8 @@ param (
     [Parameter(Mandatory=$true)]
     [string]$TargetAppServiceName,
     [Parameter(Mandatory=$true)]
-    [string]$TargetAppServiceRG
+    [string]$TargetAppServiceRG,
+    [string]$location = "eastus2"
 )
 
 function Get-StartingAppServicePriority
@@ -27,8 +28,7 @@ function Get-StartingAppServicePriority
     return $priority
 }
 
-$STagFileName = (Get-ChildItem | where-Object {$_.Name.StartsWith("ServiceTags_Public")}).Name
-$ServiceTags = Get-Content $STagFileName -Raw | ConvertFrom-Json
+$ServiceTags = Get-AzNetworkServiceTag -location $location
 $FrontDoorBackendIPList = ($ServiceTags.values | where-Object {$_.name -eq "AzureFrontDoor.Backend"}).properties.addressPrefixes
 
 try 
