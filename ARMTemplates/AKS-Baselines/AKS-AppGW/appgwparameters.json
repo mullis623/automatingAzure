@@ -1,0 +1,22 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {    
+      "appgwPIPdetails": {
+        "value": {
+            "Name": "<appgatewaypipName>",
+            "Sku": "Standard",
+            "publicIPAllocMethod": "Static"
+        }
+      },
+      "appgwdetails": {
+        "value": {
+            "Name": "<AKSAppGWName>",
+            "sku": "WAF_v2",
+            "capacity": 2,
+            "subnetName": "<appgwsubnetName>",
+            "vnetID": "<VNetResourceID>"
+        }
+      }
+    }
+  }

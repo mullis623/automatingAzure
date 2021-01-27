@@ -1,0 +1,144 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "appgwPIPdetails": {
+            "type": "object"
+        },
+        "appgwdetails": {
+            "type": "object"
+        }
+    },
+    "variables": {
+        "applicationGatewaySubnetId": "[concat(parameters('appgwdetails').vnetID, '/subnets/', parameters('appgwdetails').subnetName)]",
+        "applicationGatewayPublicIpId": "[resourceId('Microsoft.Network/publicIPAddresses',parameters('appgwPIPdetails').Name)]",
+        "applicationGatewayId": "[resourceId('Microsoft.Network/applicationGateways', parameters('appgwdetails').Name)]",
+        "webApplicationFirewallConfiguration": {
+          "enabled": "true",
+          "firewallMode": "Detection"
+        }
+    },
+    "resources": [
+        {
+            "type": "Microsoft.Network/publicIPAddresses",
+            "name": "[parameters('appgwPIPdetails').Name]",
+            "apiVersion": "2018-08-01",
+            "location": "[resourceGroup().location]",
+            "sku": {
+                "name": "[parameters('appgwPIPdetails').Sku]"
+            },
+            "properties": {
+                "publicIPAllocationMethod": "[parameters('appgwPIPdetails').publicIPAllocMethod]"
+            }
+        },
+        {
+            "type": "Microsoft.Network/applicationGateways",
+            "name": "[parameters('appgwdetails').Name]",
+            "apiVersion": "2018-08-01",
+            "location": "[resourceGroup().location]",
+            "tags": {
+                "managed-by-k8s-ingress": "true"
+            },
+            "properties": {
+                "sku": {
+                    "name": "[parameters('appgwdetails').sku]",
+                    "tier": "[parameters('appgwdetails').sku]",
+                    "capacity": "[parameters('appgwdetails').capacity]"
+                },
+                "sslPolicy": {
+                    "policyType": "Custom",
+                    "cipherSuites": [
+                        "TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384",
+                        "TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256"
+                    ],
+                    "minProtocolVersion": "TLSv1_2"
+                },
+                "gatewayIPConfigurations": [
+                    {
+                        "name": "appGatewayIpConfig",
+                        "properties": {
+                            "subnet": {
+                                "id": "[variables('applicationGatewaySubnetId')]"
+                            }
+                        }
+                    }
+                ],
+                "frontendIPConfigurations": [
+                    {
+                        "name": "appGatewayFrontendIP",
+                        "properties": {
+                            "PublicIPAddress": {
+                                "id": "[variables('applicationGatewayPublicIpId')]"
+                            }
+                        }
+                    }
+                ],
+                "frontendPorts": [
+                    {
+                        "name": "httpPort",
+                        "properties": {
+                            "Port": 80
+                        }
+                    },
+                    {
+                        "name": "httpsPort",
+                        "properties": {
+                            "Port": 443
+                        }
+                    }
+                ],
+                "backendAddressPools": [
+                    {
+                        "name": "bepool",
+                        "properties": {
+                            "backendAddresses": []
+                        }
+                    }
+                ],
+                "httpListeners": [
+                    {
+                        "name": "httpListener",
+                        "properties": {
+                            "protocol": "Http",
+                            "frontendPort": {
+                                "id": "[concat(variables('applicationGatewayId'), '/frontendPorts/httpPort')]"
+                            },
+                            "frontendIPConfiguration": {
+                                "id": "[concat(variables('applicationGatewayId'), '/frontendIPConfigurations/appGatewayFrontendIP')]"
+                            }
+                        }
+                    }
+                ],
+                "backendHttpSettingsCollection": [
+                    {
+                        "name": "setting",
+                        "properties": {
+                            "port": 80,
+                            "protocol": "Http"
+                        }
+                    }
+                ],
+                "requestRoutingRules": [
+                    {
+                        "name": "rule1",
+                        "properties": {
+                            "httpListener": {
+                                "id": "[concat(variables('applicationGatewayId'), '/httpListeners/httpListener')]"
+                            },
+                            "backendAddressPool": {
+                                "id": "[concat(variables('applicationGatewayId'), '/backendAddressPools/bepool')]"
+                            },
+                            "backendHttpSettings": {
+                                "id": "[concat(variables('applicationGatewayId'), '/backendHttpSettingsCollection/setting')]"
+                            }
+                        }
+                    }
+                ],
+                "webApplicationFirewallConfiguration": "[if(equals(parameters('appgwdetails').sku, 'WAF_v2'), variables('webApplicationFirewallConfiguration'), json('null'))]"
+            },
+            "dependsOn": [
+                "[concat('Microsoft.Network/publicIPAddresses/', parameters('appgwPIPdetails').Name)]"
+            ]
+        }
+    ]
+}

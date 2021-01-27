@@ -1,0 +1,613 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "NetworkDetails": {
+            "type": "object"
+        },
+        "aksdetails": {
+            "type": "object"
+        },
+        "kvdetails": {
+            "type": "object"
+        },
+        "ladetails": {
+            "type": "object"
+        },
+        "aksServicePrincipalClientSecret": {
+            "type": "securestring",
+            "metadata": {
+                "description": "password for the service principal. Used by AKS to manage Azure."
+            }
+        }
+    },
+    "variables": {
+        "resgpguid": "[substring(replace(guid(resourceGroup().id), '-', ''), 0, 4)]",
+        "akstoappgwidentityName": "[concat('appgwContrIdentity' , variables('resgpguid'))]",
+        "appgwtokvidentityName": "[concat('appwtokeyvaultIdentity' , variables('resgpguid'))]",
+        "containerInsightsSolutionName": "[concat('ContainerInsights(', parameters('ladetails').Name,')')]",
+        "kubernetesSubnetId": "[resourceId(parameters('NetworkDetails').RGName, 'Microsoft.Network/virtualNetworks/subnets/', parameters('NetworkDetails').Name, parameters('NetworkDetails').aksSubnetName)]",
+        "applicationGatewayId": "[resourceId(parameters('NetworkDetails').RGName, 'Microsoft.Network/applicationGateways', parameters('NetworkDetails').appGWName)]",
+        "identityId": "[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', variables('akstoappgwidentityName'))]",
+        "aksClusterId": "[resourceId('Microsoft.ContainerService/managedClusters', parameters('aksdetails').Name)]",
+        "networkContributorRole": "[concat('/subscriptions/', subscription().subscriptionId, '/providers/Microsoft.Authorization/roleDefinitions/', '4d97b98b-1d4f-4787-a291-c67834d212e7')]",
+        "contributorRole": "[concat('/subscriptions/', subscription().subscriptionId, '/providers/Microsoft.Authorization/roleDefinitions/', 'b24988ac-6180-42a0-ab88-20f7382dd24c')]",
+        "managedIdentityOperatorRole": "[concat('/subscriptions/', subscription().subscriptionId, '/providers/Microsoft.Authorization/roleDefinitions/', 'f1a07417-d97a-45cb-824c-7a7467783830')]",
+        "readerRole": "[concat('/subscriptions/', subscription().subscriptionId, '/providers/Microsoft.Authorization/roleDefinitions/', 'acdd72a7-3385-48ef-bd42-f606fba81ae7')]"
+    },
+    "resources": [
+        {
+            "type": "Microsoft.ManagedIdentity/userAssignedIdentities",
+            "name": "[variables('akstoappgwidentityName')]",
+            "apiVersion": "2018-11-30",
+            "location": "[resourceGroup().location]"
+        },
+        {
+            "type": "Microsoft.ManagedIdentity/userAssignedIdentities",
+            "name": "[variables('appgwtokvidentityName')]",
+            "apiVersion": "2018-11-30",
+            "location": "[resourceGroup().location]"
+        },
+        {
+            "type": "Microsoft.KeyVault/vaults",
+            "name": "[parameters('kvdetails').Name]",
+            "apiVersion": "2019-09-01",
+            "location": "[resourceGroup().location]",
+            "dependsOn": [
+                "[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', variables('appgwtokvidentityName'))]",
+                "[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', variables('akstoappgwidentityName'))]"
+            ],
+            "properties": {
+                "accessPolicies": [
+                    {
+                        "tenantId": "[subscription().tenantId]",
+                        "objectId": "[parameters('kvdetails').deployUserOID]",
+                        "permissions": {
+                            "keys": [
+                                "all"
+                            ],
+                            "secrets": [
+                                "all"
+                            ],
+                            "certificates": [
+                                "all"
+                            ]
+                        }
+                    },
+                    {
+                        "tenantId": "[reference(resourceId('Microsoft.ManagedIdentity/userAssignedIdentities',variables('appgwtokvidentityName'))).tenantId]",
+                        "objectId": "[reference(resourceId('Microsoft.ManagedIdentity/userAssignedIdentities',variables('appgwtokvidentityName'))).principalId]",
+                        "permissions": {
+                            "secrets": [
+                                "get"
+                            ],
+                            "certificates": [
+                                "get"
+                            ]
+                        }
+                    },
+                    {
+                        "tenantId": "[reference(resourceId('Microsoft.ManagedIdentity/userAssignedIdentities',variables('akstoappgwidentityName'))).tenantId]",
+                        "objectId": "[reference(resourceId('Microsoft.ManagedIdentity/userAssignedIdentities',variables('akstoappgwidentityName'))).principalId]",
+                        "permissions": {
+                            "secrets": [
+                                "get"
+                            ],
+                            "certificates": [
+                                "get"
+                            ]
+                        }
+                    }
+                ],
+                "enabledForTemplateDeployment": true,
+                "enableSoftDelete": true,
+                "sku": {
+                    "family": "[parameters('kvdetails').skuFamily]",
+                    "name": "[parameters('kvdetails').skuName]"
+                },
+                "tenantId": "[subscription().tenantId]"
+            }
+        },
+        {
+            "type": "Microsoft.KeyVault/vaults/providers/diagnosticSettings",
+            "apiVersion": "2017-05-01-preview",
+            "name": "[concat(parameters('kvdetails').Name, '/Microsoft.Insights/default')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.KeyVault/vaults', parameters('kvdetails').Name)]",
+                "[resourceId('Microsoft.OperationalInsights/workspaces', parameters('ladetails').Name)]"
+            ],
+            "properties": {
+                "workspaceId": "[resourceId('Microsoft.OperationalInsights/workspaces', parameters('ladetails').Name)]",
+                "logs": [
+                    {
+                        "category": "AuditEvent",
+                        "enabled": true
+                    }
+                ],
+                "metrics": [
+                    {
+                        "category": "AllMetrics",
+                        "enabled": true
+                    }
+                ]
+            }
+        },
+        {
+            "type": "Microsoft.OperationalInsights/workspaces",
+            "apiVersion": "2020-08-01",
+            "name": "[parameters('ladetails').Name]",
+            "location": "[resourceGroup().location]",
+            "properties": {
+                "sku": {
+                    "name": "[parameters('ladetails').skuName]"
+                },
+                "retentionInDays": "[parameters('ladetails').retentionInDays]"
+            },
+            "resources": [
+                {
+                    "apiVersion": "2020-08-01",
+                    "name": "AllPrometheus",
+                    "type": "savedSearches",
+                    "dependsOn": [
+                        "[concat('Microsoft.OperationalInsights/workspaces/', parameters('ladetails').Name)]"
+                    ],
+                    "properties": {
+                        "eTag": "*",
+                        "category": "Prometheus",
+                        "displayName": "All collected Prometheus information",
+                        "query": "InsightsMetrics | where Namespace == \"prometheus\"",
+                        "version": 1
+                    }
+                },
+                {
+                    "apiVersion": "2020-08-01",
+                    "name": "ForbiddenReponsesOnIngress",
+                    "type": "savedSearches",
+                    "dependsOn": [
+                        "[concat('Microsoft.OperationalInsights/workspaces/', parameters('ladetails').Name)]"
+                    ],
+                    "properties": {
+                        "eTag": "*",
+                        "category": "Prometheus",
+                        "displayName": "Increase number of forbidden response on the Ingress Controller",
+                        "query": "let value = toscalar(InsightsMetrics | where Namespace == \"prometheus\" and Name == \"traefik_entrypoint_requests_total\" | where parse_json(Tags).code == 403 | summarize Value = avg(Val) by bin(TimeGenerated, 5m) | summarize min = min(Value)); InsightsMetrics | where Namespace == \"prometheus\" and Name == \"traefik_entrypoint_requests_total\" | where parse_json(Tags).code == 403 | summarize AggregatedValue = avg(Val)-value by bin(TimeGenerated, 5m) | order by TimeGenerated | render barchart",
+                        "version": 1
+                    }
+                },
+                {
+                    "apiVersion": "2020-08-01",
+                    "name": "NodeRebootRequested",
+                    "type": "savedSearches",
+                    "dependsOn": [
+                        "[concat('Microsoft.OperationalInsights/workspaces/', parameters('ladetails').Name)]"
+                    ],
+                    "properties": {
+                        "eTag": "*",
+                        "category": "Prometheus",
+                        "displayName": "Nodes reboot required by kured",
+                        "query": "InsightsMetrics | where Namespace == \"prometheus\" and Name == \"kured_reboot_required\" | where Val > 0",
+                        "version": 1
+                    }
+                }
+            ]
+        },
+        {
+            "name": "PodFailedScheduledQuery",
+            "type": "microsoft.insights/scheduledQueryRules",
+            "apiVersion": "2018-04-16",
+            "location": "[resourceGroup().location]",
+            "dependsOn": [
+                "[resourceId('Microsoft.OperationsManagement/solutions',variables('containerInsightsSolutionName'))]"
+            ],
+            "properties": {
+                "description": "Alert on pod Failed phase.",
+                "enabled": "true",
+                "source": {
+                    "query": "[concat('//https://docs.microsoft.com/azure/azure-monitor/insights/container-insights-alerts \r\n let endDateTime = now(); let startDateTime = ago(1h); let trendBinSize = 1m; let clusterName = \"', parameters('aksdetails').Name, '\"; KubePodInventory | where TimeGenerated < endDateTime | where TimeGenerated >= startDateTime | where ClusterName == clusterName | distinct ClusterName, TimeGenerated | summarize ClusterSnapshotCount = count() by bin(TimeGenerated, trendBinSize), ClusterName | join hint.strategy=broadcast ( KubePodInventory | where TimeGenerated < endDateTime | where TimeGenerated >= startDateTime | distinct ClusterName, Computer, PodUid, TimeGenerated, PodStatus | summarize TotalCount = count(), PendingCount = sumif(1, PodStatus =~ \"Pending\"), RunningCount = sumif(1, PodStatus =~ \"Running\"), SucceededCount = sumif(1, PodStatus =~ \"Succeeded\"), FailedCount = sumif(1, PodStatus =~ \"Failed\") by ClusterName, bin(TimeGenerated, trendBinSize) ) on ClusterName, TimeGenerated | extend UnknownCount = TotalCount - PendingCount - RunningCount - SucceededCount - FailedCount | project TimeGenerated, TotalCount = todouble(TotalCount) / ClusterSnapshotCount, PendingCount = todouble(PendingCount) / ClusterSnapshotCount, RunningCount = todouble(RunningCount) / ClusterSnapshotCount, SucceededCount = todouble(SucceededCount) / ClusterSnapshotCount, FailedCount = todouble(FailedCount) / ClusterSnapshotCount, UnknownCount = todouble(UnknownCount) / ClusterSnapshotCount| summarize AggregatedValue = avg(FailedCount) by bin(TimeGenerated, trendBinSize)')]",
+                    "dataSourceId": "[resourceId('Microsoft.OperationalInsights/workspaces', parameters('ladetails').Name)]",
+                    "queryType": "ResultCount"
+                },
+                "schedule": {
+                    "frequencyInMinutes": 5,
+                    "timeWindowInMinutes": 10
+                },
+                "action": {
+                    "odata.type": "Microsoft.WindowsAzure.Management.Monitoring.Alerts.Models.Microsoft.AppInsights.Nexus.DataContracts.Resources.ScheduledQueryRules.AlertingAction",
+                    "severity": "3",
+                    "trigger": {
+                        "thresholdOperator": "GreaterThan",
+                        "threshold": "3",
+                        "metricTrigger": {
+                            "thresholdOperator": "GreaterThan",
+                            "threshold": "2",
+                            "metricTriggerType": "Consecutive"
+                        }
+                    }
+                }
+            }
+        },
+        {
+            "type": "microsoft.insights/activityLogAlerts",
+            "apiVersion": "2017-04-01",
+            "name": "AllAzureAdvisorAlert",
+            "location": "Global",
+            "properties": {
+                "scopes": [
+                    "[resourceGroup().id]"
+                ],
+                "condition": {
+                    "allOf": [
+                        {
+                            "field": "category",
+                            "equals": "Recommendation"
+                        },
+                        {
+                            "field": "operationName",
+                            "equals": "Microsoft.Advisor/recommendations/available/action"
+                        }
+                    ]
+                },
+                "actions": {
+                    "actionGroups": [
+                    ]
+                },
+                "enabled": true,
+                "description": "All azure advisor alerts"
+            }
+        },
+        {
+            "apiVersion": "2015-11-01-preview",
+            "type": "Microsoft.OperationsManagement/solutions",
+            "name": "[variables('containerInsightsSolutionName')]",
+            "location": "[resourceGroup().location]",
+            "dependsOn": [
+                "[resourceId('Microsoft.OperationalInsights/workspaces', parameters('ladetails').Name)]"
+            ],
+            "properties": {
+                "workspaceResourceId": "[resourceId('Microsoft.OperationalInsights/workspaces', parameters('ladetails').Name)]"
+            },
+            "plan": {
+                "name": "[variables('containerInsightsSolutionName')]",
+                "product": "OMSGallery/ContainerInsights",
+                "promotionCode": "",
+                "publisher": "Microsoft"
+            }
+        },
+
+
+
+
+
+
+
+
+
+
+        {
+            "type": "Microsoft.Resources/deployments",
+            "name": "AppGatewayDiagnosticsSettings",
+            "apiVersion": "2020-10-01",
+            "subscriptionId": "[subscription().subscriptionId]",
+            "resourceGroup": "[parameters('NetworkDetails').RGName]",
+            "properties": {
+                "mode": "Incremental",
+                "template": {
+                    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+                    "contentVersion": "1.0.0.0",
+                    "parameters": {},
+                    "variables": {},
+                    "resources": [
+                        {
+                            "type": "Microsoft.Network/applicationGateways/providers/diagnosticSettings",
+                            "apiVersion": "2017-05-01-preview",
+                            "name": "[concat(parameters('NetworkDetails').appGWName, '/Microsoft.Insights/default')]",
+                            "properties": {
+                                "workspaceId": "[resourceId(resourceGroup().name, 'Microsoft.OperationalInsights/workspaces', parameters('ladetails').Name)]",
+                                "logs": [
+                                    {
+                                        "category": "ApplicationGatewayAccessLog",
+                                        "enabled": true
+                                    },
+                                    {
+                                        "category": "ApplicationGatewayPerformanceLog",
+                                        "enabled": true
+                                    },
+                                    {
+                                        "category": "ApplicationGatewayFirewallLog",
+                                        "enabled": true
+                                    }
+                                ]
+                            }
+                        }
+                    ]
+                }
+            },
+            "dependsOn": [
+                "[resourceId(resourceGroup().name, 'Microsoft.OperationalInsights/workspaces', parameters('ladetails').Name)]"
+            ]
+        },
+        {
+            "type": "Microsoft.Resources/deployments",
+            "name": "RoleAssignmentDeploymentForKubenetesSp",
+            "apiVersion": "2017-05-10",
+            "subscriptionId": "[subscription().subscriptionId]",
+            "resourceGroup": "[resourceGroup().name]",
+            "properties": {
+                "mode": "Incremental",
+                "template": {
+                    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+                    "contentVersion": "1.0.0.0",
+                    "parameters": {},
+                    "variables": {},
+                    "resources": [
+                        {
+                            "type": "Microsoft.ManagedIdentity/userAssignedIdentities/providers/roleAssignments",
+                            "apiVersion": "2017-05-01",
+                            "name": "[concat(variables('akstoappgwidentityName'), '/Microsoft.Authorization/', guid(resourceGroup().id, 'aksidentityaccess'))]",
+                            "properties": {
+                                "roleDefinitionId": "[variables('managedIdentityOperatorRole')]",
+                                "principalId": "[parameters('aksdetails').servicePrincipalObjectId]",
+                                "scope": "[variables('identityId')]",
+                                "principalType": "ServicePrincipal"
+                            }
+                        }
+                    ]
+                }
+            },
+            "dependsOn": [
+                "[concat('Microsoft.ManagedIdentity/userAssignedIdentities/', variables('akstoappgwidentityName'))]"
+            ]
+        },
+        {
+            "type": "Microsoft.Resources/deployments",
+            "name": "RoleAssignmentDeploymentForKubenetesSpNetwork",
+            "apiVersion": "2017-05-10",
+            "subscriptionId": "[subscription().subscriptionId]",
+            "resourceGroup": "[parameters('NetworkDetails').RGName]",
+            "properties": {
+                "mode": "Incremental",
+                "template": {
+                    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+                    "contentVersion": "1.0.0.0",
+                    "parameters": {},
+                    "variables": {},
+                    "resources": [
+                        {
+                            "type": "Microsoft.Network/virtualNetworks/subnets/providers/roleAssignments",
+                            "apiVersion": "2017-05-01",
+                            "name": "[concat(parameters('NetworkDetails').Name, '/', parameters('NetworkDetails').aksSubnetName,'/Microsoft.Authorization/', guid(concat(subscription().id, '/resourceGroups/', parameters('NetworkDetails').RGName), 'aksvnetaccess'))]",
+                            "properties": {
+                                "roleDefinitionId": "[variables('networkContributorRole')]",
+                                "principalId": "[parameters('aksdetails').servicePrincipalObjectId]",
+                                "scope": "[variables('kubernetesSubnetId')]"
+                            }
+                        }
+                    ]
+                }
+            }
+        },
+        {
+            "type": "Microsoft.Resources/deployments",
+            "name": "RoleAssignmentDeploymentForUserAssignedIdentity",
+            "apiVersion": "2017-05-10",
+            "subscriptionId": "[subscription().subscriptionId]",
+            "resourceGroup": "[resourceGroup().name]",
+            "properties": {
+                "mode": "Incremental",
+                "template": {
+                    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+                    "contentVersion": "1.0.0.0",
+                    "parameters": {},
+                    "variables": {},
+                    "resources": [
+                        {
+                            "type": "Microsoft.Authorization/roleAssignments",
+                            "apiVersion": "2017-05-01",
+                            "name": "[guid(resourceGroup().id, 'identitynetrgaccess')]",
+                            "properties": {
+                                "roleDefinitionId": "[variables('readerRole')]",
+                                "principalId": "[reference(variables('identityId'), '2015-08-31-PREVIEW').principalId]",
+                                "scope": "[resourceGroup().id]"
+                            }
+                        }
+                    ]
+                }
+            },
+            "dependsOn": [
+                "[concat('Microsoft.ManagedIdentity/userAssignedIdentities/', variables('akstoappgwidentityName'))]"
+            ]
+        },
+        {
+            "type": "Microsoft.Resources/deployments",
+            "name": "RoleAssignmentDeploymentForUserAssignedIdentityNetwork",
+            "apiVersion": "2017-05-10",
+            "subscriptionId": "[subscription().subscriptionId]",
+            "resourceGroup": "[parameters('NetworkDetails').RGName]",
+            "properties": {
+                "mode": "Incremental",
+                "template": {
+                    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+                    "contentVersion": "1.0.0.0",
+                    "parameters": {},
+                    "variables": {},
+                    "resources": [
+                        {
+                            "type": "Microsoft.Network/applicationgateways/providers/roleAssignments",
+                            "apiVersion": "2017-05-01",
+                            "name": "[concat(parameters('NetworkDetails').appGWName, '/Microsoft.Authorization/', guid(concat(subscription().id, '/resourceGroups/', parameters('NetworkDetails').RGName), 'identityappgwaccess'))]",
+                            "properties": {
+                                "roleDefinitionId": "[variables('contributorRole')]",
+                                "principalId": "[reference(variables('identityId'), '2015-08-31-PREVIEW').principalId]",
+                                "scope": "[variables('applicationGatewayId')]"
+                            }
+                        },
+                        {
+                            "type": "Microsoft.Authorization/roleAssignments",
+                            "apiVersion": "2017-05-01",
+                            "name": "[guid(concat(subscription().id, '/resourceGroups/', parameters('NetworkDetails').RGName), 'identitynetrgaccess')]",
+                            "properties": {
+                                "roleDefinitionId": "[variables('readerRole')]",
+                                "principalId": "[reference(variables('identityId'), '2015-08-31-PREVIEW').principalId]",
+                                "scope": "[concat(subscription().id, '/resourceGroups/', parameters('NetworkDetails').RGName)]"
+                            }
+                        }
+                    ]
+                }
+            },
+            "dependsOn": [
+                "[concat('Microsoft.ManagedIdentity/userAssignedIdentities/', variables('akstoappgwidentityName'))]"
+            ]
+        },
+        {
+            "type": "Microsoft.ContainerService/managedClusters",
+            "name": "[parameters('aksdetails').Name]",
+            "apiVersion": "2020-12-01",
+            "location": "[resourceGroup().location]",
+            "properties": {
+                "kubernetesVersion": "[parameters('aksdetails').k8sVersion]",
+                "enableRBAC": "[parameters('aksdetails').enableRBAC]",
+                "dnsPrefix": "[parameters('aksdetails').dnsPrefix]",
+                "copy": [
+                    {
+                        "name": "agentPoolProfiles",
+                        "count": "[length(parameters('aksdetails').agentPoolProfiles)]",
+                        "input": {
+                            "name": "[parameters('aksdetails').agentPoolProfiles[copyIndex('agentPoolProfiles')].name]",
+                            "count": "[parameters('aksdetails').agentPoolProfiles[copyIndex('agentPoolProfiles')].count]",
+                            "vmSize": "[parameters('aksdetails').agentPoolProfiles[copyIndex('agentPoolProfiles')].vmSize]",
+                            "osDiskSizeGB": "[parameters('aksdetails').agentPoolProfiles[copyIndex('agentPoolProfiles')].osDiskSizeGB]",
+                            "osType": "[parameters('aksdetails').agentPoolProfiles[copyIndex('agentPoolProfiles')].osType]",
+                            "minCount": "[parameters('aksdetails').agentPoolProfiles[copyIndex('agentPoolProfiles')].minCount]",
+                            "maxCount": "[parameters('aksdetails').agentPoolProfiles[copyIndex('agentPoolProfiles')].maxCount]",
+                            "vnetSubnetID": "[variables('kubernetesSubnetId')]",
+                            "enableAutoScaling": true,
+                            "type": "[parameters('aksdetails').agentPoolProfiles[copyIndex('agentPoolProfiles')].type]",
+                            "mode": "[parameters('aksdetails').agentPoolProfiles[copyIndex('agentPoolProfiles')].mode]",
+                            "scaleSetPriority": "Regular",
+                            "scaleSetEvictionPolicy": "Delete",
+                            "orchestratorVersion": "[parameters('aksdetails').k8sVersion]",
+                            "enableNodePublicIP": false,
+                            "maxPods": 30,
+                            "upgradeSettings": {
+                                "maxSurge": "33%"
+                            },
+                            "storageProfile": "ManagedDisks"
+                        }                        
+                    }   
+                ],
+                "servicePrincipalProfile": {
+                    "clientId": "[parameters('aksdetails').servicePrincipalAppId]",
+                    "secret": "[parameters('aksServicePrincipalClientSecret')]"
+                },
+                "addonProfiles": {
+                    "omsagent": {
+                        "enabled": true,
+                        "config": {
+                            "logAnalyticsWorkspaceResourceId": "[resourceId('Microsoft.OperationalInsights/workspaces', parameters('ladetails').Name)]"
+                        }
+                    },
+                    "aciConnectorLinux": {
+                        "enabled": false
+                    },
+                    "azurepolicy": {
+                        "enabled": true,
+                        "config": {
+                            "version": "v2"
+                        }
+                    }
+                },
+                "nodeResourceGroup": "[parameters('aksdetails').nodeRGName]",
+                "networkProfile": {
+                    "networkPlugin": "[parameters('NetworkDetails').aksNetworkPlugin]",
+                    "serviceCidr": "[parameters('NetworkDetails').aksServiceCIDR]",
+                    "dnsServiceIP": "[parameters('NetworkDetails').aksDnsServiceIP]",
+                    "dockerBridgeCidr": "[parameters('NetworkDetails').aksDockerBridgeCIDR]"
+                },
+                "autoScalerProfile": {
+                    "scan-interval": "10s",
+                    "scale-down-delay-after-add": "10m",
+                    "scale-down-delay-after-delete": "20s",
+                    "scale-down-delay-after-failure": "3m",
+                    "scale-down-unneeded-time": "10m",
+                    "scale-down-unready-time": "20m",
+                    "scale-down-utilization-threshold": "0.5",
+                    "max-graceful-termination-sec": "600",
+                    "balance-similar-node-groups": "false",
+                    "expander": "random",
+                    "skip-nodes-with-local-storage": "true",
+                    "skip-nodes-with-system-pods": "true",
+                    "max-empty-bulk-delete": "10",
+                    "max-total-unready-percentage": "45",
+                    "ok-total-unready-count": "3"
+                },
+                "apiServerAccessProfile": {
+                    "authorizedIPRanges": "[parameters('aksdetails').clusterAuthorizedIPRanges]",
+                    "enablePrivateCluster": false
+                }
+            },
+            "dependsOn": [
+                "[concat('Microsoft.Resources/deployments/', 'RoleAssignmentDeploymentForKubenetesSp')]"
+            ]
+        },
+        {
+            "type": "Microsoft.ContainerService/managedClusters/providers/diagnosticSettings",
+            "apiVersion": "2017-05-01-preview",
+            "name": "[concat(parameters('aksdetails').Name, '/Microsoft.Insights/default')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.ContainerService/managedClusters', parameters('aksdetails').Name)]",
+                "[resourceId('Microsoft.OperationalInsights/workspaces', parameters('ladetails').Name)]"
+            ],
+            "properties": {
+                "workspaceId": "[resourceId('Microsoft.OperationalInsights/workspaces', parameters('ladetails').Name)]",
+                "logs": [
+                    {
+                        "category": "cluster-autoscaler",
+                        "enabled": true
+                    },
+                    {
+                        "category": "kube-controller-manager",
+                        "enabled": true
+                    },
+                    {
+                        "category": "kube-audit-admin",
+                        "enabled": true
+                    },
+                    {
+                        "category": "guard",
+                        "enabled": true
+                    }
+                ]
+            }
+        }
+    ],
+    "outputs": {
+        "subscriptionId": {
+            "type": "string",
+            "value": "[subscription().subscriptionId]"
+        },
+        "resourceGroupName": {
+            "type": "string",
+            "value": "[resourceGroup().name]"
+        },
+        "applicationGatewayName": {
+            "type": "string",
+            "value": "[parameters('NetworkDetails').appGWName]"
+        },
+        "identityResourceId": {
+            "type": "string",
+            "value": "[variables('identityId')]"
+        },
+        "identityClientId": {
+            "type": "string",
+            "value": "[reference(variables('identityID'), '2015-08-31-PREVIEW').clientId]"
+        },
+        "aksApiServerAddress": {
+            "type": "string",
+            "value": "[reference(variables('aksClusterId'), '2018-03-31').fqdn]"
+        },
+        "aksClusterName": {
+            "type": "string",
+            "value": "[parameters('aksdetails').Name]"
+        }
+    }
+}

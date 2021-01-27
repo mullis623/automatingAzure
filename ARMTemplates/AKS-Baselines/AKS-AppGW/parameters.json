@@ -1,0 +1,79 @@
+{
+	"$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+	"contentVersion": "1.0.0.0",
+	"parameters": {
+		"NetworkDetails": {
+			"value": {
+				"Name": "<vnetName>",
+				"RGName": "<vnetRGName>",
+				"aksSubnetName": "<akssubnetName>",
+				"appGWName": "<aksappgwName>",
+				"aksNetworkPlugin": "azure",
+				"aksServiceCIDR": "10.0.0.0/16",
+				"aksDnsServiceIP": "10.0.0.10",
+				"aksDockerBridgeCIDR": "172.17.0.1/16"
+			}
+		},
+		"aksdetails": {
+			"value": {
+				"Name": "<clusterName>",
+				"k8sVersion": "1.19.6",
+				"enableRBAC": false,
+				"dnsPrefix": "aks",
+				"servicePrincipalAppId": "<AKSSPNClientID>",
+				"servicePrincipalObjectId": "<AKSSPNObjectID>",
+				"clusterAuthorizedIPRanges": [
+                    "72.200.146.37/32"
+				],
+				"nodeRGName": "RGNameForAKSNodes",
+                "agentPoolProfiles": [
+                    {
+                        "name": "systempool",
+                        "count": 3,
+                        "vmSize": "Standard_DS2_V2",
+                        "osDiskSizeGB": 80,
+                        "osType": "Linux",
+                        "type": "VirtualMachineScaleSets",
+                        "mode": "System",
+                        "minCount": 3,
+                        "maxCount": 4
+                    },
+                    {
+                        "name": "userpool",
+                        "count": 2,
+                        "vmSize": "Standard_DS3_V2",
+                        "osDiskSizeGB": 120,
+                        "osType": "Linux",
+                        "type": "VirtualMachineScaleSets",
+                        "mode": "User",
+                        "minCount": 2,
+                        "maxCount": 5
+                    }
+                ]
+			}
+        },
+        "kvdetails": {
+			"value": {
+				"Name": "<kvName>",
+				"skuFamily": "A",
+                "skuName": "Standard",
+                "deployUserOID": "<DeploymentUserOID>" 
+			}
+        },
+        "ladetails": {
+            "value": {
+				"Name": "<LogAnalyticsName>",
+                "skuName": "Standard",
+                "retentionInDays": 30
+			}
+        },
+		"aksServicePrincipalClientSecret": {
+			"reference": {
+				"keyVault": {
+					"id": "<KeyVaultResourceID>"
+				},
+				"secretName": "<AKSSPNClientSecret-SecretName>"
+			}
+		}
+	}
+}
