@@ -14,8 +14,8 @@
         "applicationGatewayPublicIpId": "[resourceId('Microsoft.Network/publicIPAddresses',parameters('appgwPIPdetails').Name)]",
         "applicationGatewayId": "[resourceId('Microsoft.Network/applicationGateways', parameters('appgwdetails').Name)]",
         "webApplicationFirewallConfiguration": {
-          "enabled": "true",
-          "firewallMode": "Detection"
+            "enabled": "true",
+            "firewallMode": "Detection"
         }
     },
     "resources": [

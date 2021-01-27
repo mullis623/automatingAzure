@@ -273,16 +273,6 @@
                 "publisher": "Microsoft"
             }
         },
-
-
-
-
-
-
-
-
-
-
         {
             "type": "Microsoft.Resources/deployments",
             "name": "AppGatewayDiagnosticsSettings",
@@ -492,8 +482,8 @@
                                 "maxSurge": "33%"
                             },
                             "storageProfile": "ManagedDisks"
-                        }                        
-                    }   
+                        }
+                    }
                 ],
                 "servicePrincipalProfile": {
                     "clientId": "[parameters('aksdetails').servicePrincipalAppId]",
