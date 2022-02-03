@@ -157,7 +157,7 @@ foreach($AppServiceIP in $AppServiceIPList)
 
 if($SynapseName)
 {
-    $SynapseRegion = (Get-AzSynapseWorkspace -ResourceGroupName VALottery-RG -Name valottery-synapse).location
+    $SynapseRegion = (Get-AzSynapseWorkspace -ResourceGroupName $SynapseRGName -Name $SynapseName).location
 
     if(!$SynapseRegion)
     {
@@ -168,7 +168,7 @@ if($SynapseName)
 
     $ServiceTags = Get-AzNetworkServiceTag -Location $SynapseRegion
 
-    $SynapseIPRanges = ($ServiceTags.Values | where-object{$_.Name -eq "Sql.$SynapseRegion"}).Properties.AddressPrefixes
+    $SynapseIPRanges = ($ServiceTags.Values | where-object{$_.Name -eq "DataFactory.$SynapseRegion"}).Properties.AddressPrefixes
 
     foreach($ip in $SynapseIPRanges)
     {
