@@ -15,11 +15,11 @@
         If all Resources (Source and Target App Services and SQL Server) are in the same Resource Group, the -RGName parameter can be used. 
         Otherwise, each Resource Group Name needs to be specified along with the resource name.  
 
-        Example 1 (All Resources in the same Resource Group with both App Service and SQL Server as Targets)
+        Example 1 (All Resources in the same Resource Group with both App Service and SQL Server as Targets using All Possible Outbound IPs)
 
         .\SetupACLs.ps1 -SourceAppServiceName "SrcName" -TargetAppServiceName "TarName" -RGName "ResourceGroup" -SQLServerName "SQLName" -AllPossibleOutboundIPs
 
-        Example 2 (All Resources in the same Resource Group with both App Service and SQL Server as Targets using All Possible Outbound IPs)
+        Example 2 (All Resources in the same Resource Group with both App Service and SQL Server as Targets)
 
         .\SetupACLs.ps1 -SourceAppServiceName "SrcName" -TargetAppServiceName "TarName" -RGName "ResourceGroup" -SQLServerName "SQLName"
 
