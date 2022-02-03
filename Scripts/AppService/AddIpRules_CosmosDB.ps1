@@ -7,8 +7,8 @@
         2) Adds the required IP Rules to enable access to the Cosmos DB Account from the Azure Portal if the required switch is included they do not yet exist
         3) Adds the App Service/Function Outbound IPs to the Cosmos DB IP Rules (see section below for detailed explantion around which IPs will be included)
         3) If defined, the IP Ranges to allow Azure Synapse to connect to CosmosBB are also added to the IP Rules list.  By default, Azure Synapse utilizes
-        backend IPs available under the SQL Service Tag when creating the Backend Pools (Sql Pools, Appche Spark Pools, etc.) The IPs that are added to the CosmosDB IP
-        Rules list are all the available IPv4 ranges in the SQl Service Tag for the region where Synapse is deployed.   
+        backend IPs available under the DataFactory Service Tag when creating the Backend Pools (Sql Pools, Appche Spark Pools, etc.) The IPs that are added to the CosmosDB IP
+        Rules list are all the available IPv4 ranges in the DataFactory Service Tag for the region where Synapse is deployed.   
         4) Once the full list of IP Rules has been generated through the above process, the CosmosDB Account is updated with the new list.  The IPs are not added one at a time
         as with some other services. 
 
